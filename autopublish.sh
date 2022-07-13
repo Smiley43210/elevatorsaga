@@ -1,5 +1,5 @@
 git checkout gh-pages;
 git pull --rebase origin gh-pages;
-git merge master;
+git merge main;
 git push origin gh-pages;
-git checkout master;
+git checkout main;
