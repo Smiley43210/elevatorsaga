@@ -1,0 +1,25 @@
+{
+  "name": "elevatorsaga",
+  "version": "1.0.0",
+  "description": "Elevator Saga =================== The elevator programming game",
+  "main": "app.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "lint": "npx eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Smiley43210/elevatorsaga.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Smiley43210/elevatorsaga/issues"
+  },
+  "homepage": "https://github.com/Smiley43210/elevatorsaga#readme",
+  "devDependencies": {
+    "eslint": "^8.19.0"
+  }
+}

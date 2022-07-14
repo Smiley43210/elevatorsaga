@@ -1,252 +1,250 @@
+const createEditor = function () {
+	const lsKey = 'elevatorCrushCode_v5';
 
-var createEditor = function() {
-    var lsKey = "elevatorCrushCode_v5";
+	const cm = CodeMirror.fromTextArea(document.getElementById('code'), {
+		lineNumbers: true,
+		indentUnit: 4,
+		indentWithTabs: false,
+		theme: 'solarized light',
+		mode: 'javascript',
+		autoCloseBrackets: true,
+		extraKeys: {
+			// the following Tab key mapping is from http://codemirror.net/doc/manual.html#keymaps
+			Tab: function (cm) {
+				const spaces = new Array(cm.getOption('indentUnit') + 1).join(' ');
+				cm.replaceSelection(spaces);
+			},
+		},
+	});
 
-    var cm = CodeMirror.fromTextArea(document.getElementById("code"), {
-        lineNumbers: true,
-        indentUnit: 4,
-        indentWithTabs: false,
-        theme: "solarized light",
-        mode: "javascript",
-        autoCloseBrackets: true,
-        extraKeys: {
-            // the following Tab key mapping is from http://codemirror.net/doc/manual.html#keymaps
-            Tab: function(cm) {
-                var spaces = new Array(cm.getOption("indentUnit") + 1).join(" ");
-                cm.replaceSelection(spaces);
-            }
-        }
-    });
+	// reindent on paste (adapted from https://github.com/ahuth/brackets-paste-and-indent/blob/master/main.js)
+	cm.on('change', (codeMirror, change) => {
+		if (change.origin !== 'paste') {
+			return;
+		}
 
-    // reindent on paste (adapted from https://github.com/ahuth/brackets-paste-and-indent/blob/master/main.js)
-    cm.on("change", function(codeMirror, change) {
-        if(change.origin !== "paste") {
-            return;
-        }
+		const lineFrom = change.from.line;
+		const lineTo = change.from.line + change.text.length;
 
-        var lineFrom = change.from.line;
-        var lineTo = change.from.line + change.text.length;
+		function reindentLines(codeMirror, lineFrom, lineTo) {
+			codeMirror.operation(() => {
+				codeMirror.eachLine(lineFrom, lineTo, (lineHandle) => {
+					codeMirror.indentLine(lineHandle.lineNo(), 'smart');
+				});
+			});
+		}
 
-        function reindentLines(codeMirror, lineFrom, lineTo) {
-            codeMirror.operation(function() {
-                codeMirror.eachLine(lineFrom, lineTo, function(lineHandle) {
-                    codeMirror.indentLine(lineHandle.lineNo(), "smart");
-                });
-            });
-        }
+		reindentLines(codeMirror, lineFrom, lineTo);
+	});
 
-        reindentLines(codeMirror, lineFrom, lineTo);
-    });
+	const reset = function () {
+		cm.setValue($('#default-elev-implementation').text().trim());
+	};
+	const saveCode = function () {
+		localStorage.setItem(lsKey, cm.getValue());
+		$('#save_message').text(`Code saved ${new Date().toTimeString()}`);
+		returnObj.trigger('change');
+	};
 
-    var reset = function() {
-        cm.setValue($("#default-elev-implementation").text().trim());
-    };
-    var saveCode = function() {
-        localStorage.setItem(lsKey, cm.getValue());
-        $("#save_message").text("Code saved " + new Date().toTimeString());
-        returnObj.trigger("change");
-    };
+	const existingCode = localStorage.getItem(lsKey);
+	if (existingCode) {
+		cm.setValue(existingCode);
+	} else {
+		reset();
+	}
 
-    var existingCode = localStorage.getItem(lsKey);
-    if(existingCode) {
-        cm.setValue(existingCode);
-    } else {
-        reset();
-    }
+	$('#button_save').click(() => {
+		saveCode();
+		cm.focus();
+	});
 
-    $("#button_save").click(function() {
-        saveCode();
-        cm.focus();
-    });
+	$('#button_reset').click(() => {
+		if (confirm('Do you really want to reset to the default implementation?')) {
+			localStorage.setItem('develevateBackupCode', cm.getValue());
+			reset();
+		}
+		cm.focus();
+	});
 
-    $("#button_reset").click(function() {
-        if(confirm("Do you really want to reset to the default implementation?")) {
-            localStorage.setItem("develevateBackupCode", cm.getValue());
-            reset();
-        }
-        cm.focus();
-    });
+	$('#button_resetundo').click(() => {
+		if (confirm('Do you want to bring back the code as before the last reset?')) {
+			cm.setValue(localStorage.getItem('develevateBackupCode') || '');
+		}
+		cm.focus();
+	});
 
-    $("#button_resetundo").click(function() {
-        if(confirm("Do you want to bring back the code as before the last reset?")) {
-            cm.setValue(localStorage.getItem("develevateBackupCode") || "");
-        }
-        cm.focus();
-    });
+	var returnObj = riot.observable({});
+	const autoSaver = _.debounce(saveCode, 1000);
+	cm.on('change', () => {
+		autoSaver();
+	});
 
-    var returnObj = riot.observable({});
-    var autoSaver = _.debounce(saveCode, 1000);
-    cm.on("change", function() {
-        autoSaver();
-    });
+	returnObj.getCodeObj = function () {
+		console.log('Getting code...');
+		const code = cm.getValue();
+		let obj;
+		try {
+			obj = getCodeObjFromCode(code);
+			returnObj.trigger('code_success');
+		} catch (e) {
+			returnObj.trigger('usercode_error', e);
+			return null;
+		}
+		return obj;
+	};
+	returnObj.setCode = function (code) {
+		cm.setValue(code);
+	};
+	returnObj.getCode = function () {
+		return cm.getValue();
+	};
+	returnObj.setDevTestCode = function () {
+		cm.setValue($('#devtest-elev-implementation').text().trim());
+	};
 
-    returnObj.getCodeObj = function() {
-        console.log("Getting code...");
-        var code = cm.getValue();
-        var obj;
-        try {
-            obj = getCodeObjFromCode(code);
-            returnObj.trigger("code_success");
-        } catch(e) {
-            returnObj.trigger("usercode_error", e);
-            return null;
-        }
-        return obj;
-    };
-    returnObj.setCode = function(code) {
-        cm.setValue(code);
-    };
-    returnObj.getCode = function() {
-        return cm.getValue();
-    }
-    returnObj.setDevTestCode = function() {
-        cm.setValue($("#devtest-elev-implementation").text().trim());
-    }
-
-    $("#button_apply").click(function() {
-        returnObj.trigger("apply_code");
-    });
-    return returnObj;
+	$('#button_apply').click(() => {
+		returnObj.trigger('apply_code');
+	});
+	return returnObj;
 };
 
-
-var createParamsUrl = function(current, overrides) {
-    return "#" + _.map(_.merge(current, overrides), function(val, key) {
-        return key + "=" + val;
-    }).join(",");
+const createParamsUrl = function (current, overrides) {
+	return `#${_.map(_.merge(current, overrides), (val, key) => {
+		return `${key}=${val}`;
+	}).join(',')}`;
 };
 
+$(() => {
+	const tsKey = 'elevatorTimeScale';
+	const editor = createEditor();
 
+	let params = {};
 
-$(function() {
-    var tsKey = "elevatorTimeScale";
-    var editor = createEditor();
+	const $world = $('.innerworld');
+	const $stats = $('.statscontainer');
+	const $feedback = $('.feedbackcontainer');
+	const $challenge = $('.challenge');
+	const $codestatus = $('.codestatus');
 
-    var params = {};
+	const floorTempl = document.getElementById('floor-template').innerHTML.trim();
+	const elevatorTempl = document.getElementById('elevator-template').innerHTML.trim();
+	const elevatorButtonTempl = document.getElementById('elevatorbutton-template').innerHTML.trim();
+	const userTempl = document.getElementById('user-template').innerHTML.trim();
+	const challengeTempl = document.getElementById('challenge-template').innerHTML.trim();
+	const feedbackTempl = document.getElementById('feedback-template').innerHTML.trim();
+	const codeStatusTempl = document.getElementById('codestatus-template').innerHTML.trim();
 
-    var $world = $(".innerworld");
-    var $stats = $(".statscontainer");
-    var $feedback = $(".feedbackcontainer");
-    var $challenge = $(".challenge");
-    var $codestatus = $(".codestatus");
+	const app = riot.observable({});
+	app.worldController = createWorldController(1.0 / 60.0);
+	app.worldController.on('usercode_error', (e) => {
+		console.log('World raised code error', e);
+		editor.trigger('usercode_error', e);
+	});
 
-    var floorTempl = document.getElementById("floor-template").innerHTML.trim();
-    var elevatorTempl = document.getElementById("elevator-template").innerHTML.trim();
-    var elevatorButtonTempl = document.getElementById("elevatorbutton-template").innerHTML.trim();
-    var userTempl = document.getElementById("user-template").innerHTML.trim();
-    var challengeTempl = document.getElementById("challenge-template").innerHTML.trim();
-    var feedbackTempl = document.getElementById("feedback-template").innerHTML.trim();
-    var codeStatusTempl = document.getElementById("codestatus-template").innerHTML.trim();
+	console.log(app.worldController);
+	app.worldCreator = createWorldCreator();
+	app.world = undefined;
 
-    var app = riot.observable({});
-    app.worldController = createWorldController(1.0 / 60.0);
-    app.worldController.on("usercode_error", function(e) {
-        console.log("World raised code error", e);
-        editor.trigger("usercode_error", e);
-    });
+	app.currentChallengeIndex = 0;
 
-    console.log(app.worldController);
-    app.worldCreator = createWorldCreator();
-    app.world = undefined;
+	app.startStopOrRestart = function () {
+		if (app.world.challengeEnded) {
+			app.startChallenge(app.currentChallengeIndex);
+		} else {
+			app.worldController.setPaused(!app.worldController.isPaused);
+		}
+	};
 
-    app.currentChallengeIndex = 0;
+	app.startChallenge = function (challengeIndex, autoStart) {
+		if (typeof app.world !== 'undefined') {
+			app.world.unWind();
+			// TODO: Investigate if memory leaks happen here
+		}
+		app.currentChallengeIndex = challengeIndex;
+		app.world = app.worldCreator.createWorld(challenges[challengeIndex].options);
+		window.world = app.world;
 
-    app.startStopOrRestart = function() {
-        if(app.world.challengeEnded) {
-            app.startChallenge(app.currentChallengeIndex);
-        } else {
-            app.worldController.setPaused(!app.worldController.isPaused);
-        }
-    };
+		clearAll([$world, $feedback]);
+		presentStats($stats, app.world);
+		presentChallenge($challenge, challenges[challengeIndex], app, app.world, app.worldController, challengeIndex + 1, challengeTempl);
+		presentWorld($world, app.world, floorTempl, elevatorTempl, elevatorButtonTempl, userTempl);
 
-    app.startChallenge = function(challengeIndex, autoStart) {
-        if(typeof app.world !== "undefined") {
-            app.world.unWind();
-            // TODO: Investigate if memory leaks happen here
-        }
-        app.currentChallengeIndex = challengeIndex;
-        app.world = app.worldCreator.createWorld(challenges[challengeIndex].options);
-        window.world = app.world;
+		app.worldController.on('timescale_changed', () => {
+			localStorage.setItem(tsKey, app.worldController.timeScale);
+			presentChallenge($challenge, challenges[challengeIndex], app, app.world, app.worldController, challengeIndex + 1, challengeTempl);
+		});
 
-        clearAll([$world, $feedback]);
-        presentStats($stats, app.world);
-        presentChallenge($challenge, challenges[challengeIndex], app, app.world, app.worldController, challengeIndex + 1, challengeTempl);
-        presentWorld($world, app.world, floorTempl, elevatorTempl, elevatorButtonTempl, userTempl);
+		app.world.on('stats_changed', () => {
+			const challengeStatus = challenges[challengeIndex].condition.evaluate(app.world);
+			if (challengeStatus !== null) {
+				app.world.challengeEnded = true;
+				app.worldController.setPaused(true);
+				if (challengeStatus) {
+					presentFeedback($feedback, feedbackTempl, app.world, 'Success!', 'Challenge completed', createParamsUrl(params, {challenge: challengeIndex + 2}));
+				} else {
+					presentFeedback($feedback, feedbackTempl, app.world, 'Challenge failed', 'Maybe your program needs an improvement?', '');
+				}
+			}
+		});
 
-        app.worldController.on("timescale_changed", function() {
-            localStorage.setItem(tsKey, app.worldController.timeScale);
-            presentChallenge($challenge, challenges[challengeIndex], app, app.world, app.worldController, challengeIndex + 1, challengeTempl);
-        });
+		const codeObj = editor.getCodeObj();
+		console.log('Starting...');
+		app.worldController.start(app.world, codeObj, window.requestAnimationFrame, autoStart);
+	};
 
-        app.world.on("stats_changed", function() {
-            var challengeStatus = challenges[challengeIndex].condition.evaluate(app.world);
-            if(challengeStatus !== null) {
-                app.world.challengeEnded = true;
-                app.worldController.setPaused(true);
-                if(challengeStatus) {
-                    presentFeedback($feedback, feedbackTempl, app.world, "Success!", "Challenge completed", createParamsUrl(params, { challenge: (challengeIndex + 2)}));
-                } else {
-                    presentFeedback($feedback, feedbackTempl, app.world, "Challenge failed", "Maybe your program needs an improvement?", "");
-                }
-            }
-        });
+	editor.on('apply_code', () => {
+		app.startChallenge(app.currentChallengeIndex, true);
+	});
+	editor.on('code_success', () => {
+		presentCodeStatus($codestatus, codeStatusTempl);
+	});
+	editor.on('usercode_error', (error) => {
+		presentCodeStatus($codestatus, codeStatusTempl, error);
+	});
+	editor.on('change', () => {
+		$('#fitness_message').addClass('faded');
+		const codeStr = editor.getCode();
+		// fitnessSuite(codeStr, true, function(results) {
+		//     var message = "";
+		//     if(!results.error) {
+		//         message = "Fitness avg wait times: " + _.map(results, function(r){ return r.options.description + ": " + r.result.avgWaitTime.toPrecision(3) + "s" }).join("&nbsp&nbsp&nbsp");
+		//     } else {
+		//         message = "Could not compute fitness due to error: " + results.error;
+		//     }
+		//     $("#fitness_message").html(message).removeClass("faded");
+		// });
+	});
+	editor.trigger('change');
 
-        var codeObj = editor.getCodeObj();
-        console.log("Starting...");
-        app.worldController.start(app.world, codeObj, window.requestAnimationFrame, autoStart);
-    };
-
-    editor.on("apply_code", function() {
-        app.startChallenge(app.currentChallengeIndex, true);
-    });
-    editor.on("code_success", function() {
-        presentCodeStatus($codestatus, codeStatusTempl);
-    });
-    editor.on("usercode_error", function(error) {
-        presentCodeStatus($codestatus, codeStatusTempl, error);
-    });
-    editor.on("change", function() {
-        $("#fitness_message").addClass("faded");
-        var codeStr = editor.getCode();
-        // fitnessSuite(codeStr, true, function(results) {
-        //     var message = "";
-        //     if(!results.error) {
-        //         message = "Fitness avg wait times: " + _.map(results, function(r){ return r.options.description + ": " + r.result.avgWaitTime.toPrecision(3) + "s" }).join("&nbsp&nbsp&nbsp");
-        //     } else {
-        //         message = "Could not compute fitness due to error: " + results.error;
-        //     }
-        //     $("#fitness_message").html(message).removeClass("faded");
-        // });
-    });
-    editor.trigger("change");
-
-    riot.route(function(path) {
-        params = _.reduce(path.split(","), function(result, p) {
-            var match = p.match(/(\w+)=(\w+$)/);
-            if(match) { result[match[1]] = match[2]; } return result;
-        }, {});
-        var requestedChallenge = 0;
-        var autoStart = false;
-        var timeScale = parseFloat(localStorage.getItem(tsKey)) || 2.0;
-        _.each(params, function(val, key) {
-            if(key === "challenge") {
-                requestedChallenge = _.parseInt(val) - 1;
-                if(requestedChallenge < 0 || requestedChallenge >= challenges.length) {
-                    console.log("Invalid challenge index", requestedChallenge);
-                    console.log("Defaulting to first challenge");
-                    requestedChallenge = 0;
-                }
-            } else if(key === "autostart") {
-                autoStart = val === "false" ? false : true;
-            } else if(key === "timescale") {
-                timeScale = parseFloat(val);
-            } else if(key === "devtest") {
-                editor.setDevTestCode();
-            } else if(key === "fullscreen") {
-                makeDemoFullscreen();
-            }
-        });
-        app.worldController.setTimeScale(timeScale);
-        app.startChallenge(requestedChallenge, autoStart);
-    });
+	riot.route((path) => {
+		params = _.reduce(path.split(','), (result, p) => {
+			const match = p.match(/(\w+)=(\w+$)/);
+			if (match) {
+				result[match[1]] = match[2];
+			} return result;
+		}, {});
+		let requestedChallenge = 0;
+		let autoStart = false;
+		let timeScale = parseFloat(localStorage.getItem(tsKey)) || 2.0;
+		_.each(params, (val, key) => {
+			if (key === 'challenge') {
+				requestedChallenge = _.parseInt(val) - 1;
+				if (requestedChallenge < 0 || requestedChallenge >= challenges.length) {
+					console.log('Invalid challenge index', requestedChallenge);
+					console.log('Defaulting to first challenge');
+					requestedChallenge = 0;
+				}
+			} else if (key === 'autostart') {
+				autoStart = val === 'false' ? false : true;
+			} else if (key === 'timescale') {
+				timeScale = parseFloat(val);
+			} else if (key === 'devtest') {
+				editor.setDevTestCode();
+			} else if (key === 'fullscreen') {
+				makeDemoFullscreen();
+			}
+		});
+		app.worldController.setTimeScale(timeScale);
+		app.startChallenge(requestedChallenge, autoStart);
+	});
 });

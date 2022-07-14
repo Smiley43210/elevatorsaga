@@ -1,0 +1,10 @@
+{
+	"globals": {
+		"beforeEach": "readonly",
+		"describe": "readonly",
+		"expect": "readonly",
+		"it": "readonly",
+		"jasmine": "readonly",
+		"spyOn": "readonly"
+	}
+}
