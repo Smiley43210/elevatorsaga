@@ -1,4 +1,4 @@
-const requireUserCountWithinTime = function (userCount, timeLimit) {
+export const requireUserCountWithinTime = function (userCount, timeLimit) {
 	return {
 		description: `Transport <span class='emphasis-color'>${userCount}</span> people in <span class='emphasis-color'>${timeLimit.toFixed(0)}</span> seconds or less`,
 		evaluate: function (world) {
@@ -11,7 +11,7 @@ const requireUserCountWithinTime = function (userCount, timeLimit) {
 	};
 };
 
-const requireUserCountWithMaxWaitTime = function (userCount, maxWaitTime) {
+export const requireUserCountWithMaxWaitTime = function (userCount, maxWaitTime) {
 	return {
 		description: `Transport <span class='emphasis-color'>${userCount}</span> people and let no one wait more than <span class='emphasis-color'>${maxWaitTime.toFixed(1)}</span> seconds`,
 		evaluate: function (world) {
@@ -24,7 +24,7 @@ const requireUserCountWithMaxWaitTime = function (userCount, maxWaitTime) {
 	};
 };
 
-const requireUserCountWithinTimeWithMaxWaitTime = function (userCount, timeLimit, maxWaitTime) {
+export const requireUserCountWithinTimeWithMaxWaitTime = function (userCount, timeLimit, maxWaitTime) {
 	return {
 		description: `Transport <span class='emphasis-color'>${userCount}</span> people in <span class='emphasis-color'>${timeLimit.toFixed(0)}</span> seconds or less and let no one wait more than <span class='emphasis-color'>${maxWaitTime.toFixed(1)}</span> seconds`,
 		evaluate: function (world) {
@@ -37,7 +37,7 @@ const requireUserCountWithinTimeWithMaxWaitTime = function (userCount, timeLimit
 	};
 };
 
-const requireUserCountWithinMoves = function (userCount, moveLimit) {
+export const requireUserCountWithinMoves = function (userCount, moveLimit) {
 	return {
 		description: `Transport <span class='emphasis-color'>${userCount}</span> people using <span class='emphasis-color'>${moveLimit}</span> elevator moves or less`,
 		evaluate: function (world) {
@@ -50,7 +50,7 @@ const requireUserCountWithinMoves = function (userCount, moveLimit) {
 	};
 };
 
-const requireDemo = function () {
+export const requireDemo = function () {
 	return {
 		description: 'Perpetual demo',
 		evaluate: function () {
@@ -60,7 +60,7 @@ const requireDemo = function () {
 };
 
 /* jshint laxcomma:true */
-const challenges = [
+export const challenges = [
 	{options: {floorCount: 3, elevatorCount: 1, spawnRate: 0.3}, condition: requireUserCountWithinTime(15, 60)},
 	{options: {floorCount: 5, elevatorCount: 1, spawnRate: 0.4}, condition: requireUserCountWithinTime(20, 60)},
 	{options: {floorCount: 5, elevatorCount: 1, spawnRate: 0.5, elevatorCapacities: [6]}, condition: requireUserCountWithinTime(23, 60)},

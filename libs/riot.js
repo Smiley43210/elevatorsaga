@@ -1,53 +1,55 @@
 /* Riot 1.0.2, @license MIT, (c) 2014 Muut Inc + contributors */
 (function (riot) {
-
-	riot.observable = function (el) {
-		let callbacks = {}, slice = [].slice;
-
-		el.on = function (events, fn) {
+	riot.observable = class observable {
+		constructor() {
+			this.callbacks = {};
+			this.slice = [].slice;
+		}
+		
+		on(events, fn) {
 			if (typeof fn === 'function') {
 				events.replace(/[^\s]+/g, (name, pos) => {
-					(callbacks[name] = callbacks[name] || []).push(fn);
+					(this.callbacks[name] = this.callbacks[name] || []).push(fn);
 					fn.typed = pos > 0;
 				});
 			}
-			return el;
-		};
+			return this;
+		}
 
-		el.off = function (events, fn) {
+		off(events, fn) {
 			if (events === '*') {
-				callbacks = {};
+				this.callbacks = {};
 			} else if (fn) {
-				const arr = callbacks[events];
-				for (var i = 0, cb; cb = arr && arr[i]; ++i) {
+				const arr = this.callbacks[events];
+				for (let i = 0, cb; cb = arr && arr[i]; ++i) {
 					if (cb === fn) {
 						arr.splice(i, 1);
 					}
 				}
 			} else {
 				events.replace(/[^\s]+/g, (name) => {
-					callbacks[name] = [];
+					this.callbacks[name] = [];
 				});
 			}
-			return el;
-		};
+			return this;
+		}
 
 		// only single event supported
-		el.one = function (name, fn) {
+		one(name, fn) {
 			if (fn) {
 				fn.one = true;
 			}
-			return el.on(name, fn);
-		};
+			return this.on(name, fn);
+		}
 
-		el.trigger = function (name) {
-			const args = slice.call(arguments, 1),
-				fns = callbacks[name] || [];
+		trigger(name) {
+			const args = this.slice.call(arguments, 1),
+				fns = this.callbacks[name] || [];
 
-			for (var i = 0, fn; fn = fns[i]; ++i) {
+			for (let i = 0, fn; fn = fns[i]; ++i) {
 				if (!fn.busy) {
 					fn.busy = true;
-					fn.apply(el, fn.typed ? [name].concat(args) : args);
+					fn.apply(this, fn.typed ? [name].concat(args) : args);
 					if (fn.one) {
 						fns.splice(i, 1); i--;
 					} else if (fns[i] && fns[i] !== fn) {
@@ -57,33 +59,31 @@
 				}
 			}
 
-			return el;
-		};
-
-		return el;
+			return this;
+		}
 	};
 
 	const FN = {}, // Precompiled templates (JavaScript functions)
-		template_escape = {'\\': '\\\\', '\n': '\\n', '\r': '\\r', "'": "\\'"},
-		render_escape = {'&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;'};
+		templateEscape = {'\\': '\\\\', '\n': '\\n', '\r': '\\r', "'": "\\'"},
+		renderEscape = {'&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;'};
 
-	function default_escape_fn(str, key) {
-		return str == null ? '' : `${str}`.replace(/[&\"<>]/g, (char) => {
-			return render_escape[char];
+	function defaultEscapeFunction(str, key) {
+		return str == null ? '' : `${str}`.replace(/[&"<>]/g, (char) => {
+			return renderEscape[char];
 		});
 	}
 
-	riot.render = function (tmpl, data, escape_fn) {
-		if (escape_fn === true) {
-			escape_fn = default_escape_fn;
+	riot.render = function (tmpl, data, escapeFunction) {
+		if (escapeFunction === true) {
+			escapeFunction = defaultEscapeFunction;
 		}
 		tmpl = tmpl || '';
 
 		return (FN[tmpl] = FN[tmpl] || new Function('_', 'e', `return '${
 			tmpl.replace(/[\\\n\r']/g, (char) => {
-				return template_escape[char];
-			}).replace(/{\s*([\w\.]+)\s*}/g, "' + (e?e(_.$1,'$1'):_.$1||(_.$1==null?'':_.$1)) + '")}'`)
-		)(data, escape_fn);
+				return templateEscape[char];
+			}).replace(/{\s*([\w.]+)\s*}/g, "' + (e?e(_.$1,'$1'):_.$1||(_.$1==null?'':_.$1)) + '")}'`)
+		)(data, escapeFunction);
 	};
 	/* Cross browser popstate */
 	(function () {
@@ -92,10 +92,10 @@
 			return;
 		}
 
-		let currentHash,
-			pops = riot.observable({}),
-			listen = window.addEventListener,
-			doc = document;
+		let currentHash;
+		const pops = new riot.observable();
+		const listen = window.addEventListener;
+		const doc = document;
 
 		function pop(hash) {
 			hash = hash.type ? location.hash : hash;
@@ -136,4 +136,4 @@
 
 		};
 	})();
-})(typeof window !== 'undefined' ? window.riot = {} : typeof exports !== 'undefined' ? exports : self.riot = {});
+})(typeof window !== 'undefined' ? window.riot = {} : typeof exports !== 'undefined' ? exports : self.riot = {});

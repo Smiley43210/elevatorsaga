@@ -1,3 +1,11 @@
+import {createFrameRequester, getCodeObjFromCode} from '../script/base.js';
+import Elevator from '../script/elevator.js';
+import ElevatorInterface from '../script/interfaces.js';
+import Movable from '../script/movable.js';
+import User from '../script/user.js';
+import {requireUserCountWithinMoves, requireUserCountWithinTime, requireUserCountWithinTimeWithMaxWaitTime, requireUserCountWithMaxWaitTime} from '../script/challenges.js';
+import {WorldController} from '../script/world.js';
+
 const timeForwarder = function (dt, stepSize, fn) {
 	let accumulated = 0.0;
 	while (accumulated < dt) {
@@ -115,9 +123,12 @@ describe('Elevator Saga', () => {
 		let frameRequester = null;
 		const DT_MAX = 1000.0 / 59;
 		beforeEach(() => {
-			controller = createWorldController(DT_MAX);
-			fakeWorld = {update: function (dt) {}, init: function () {}, updateDisplayPositions: function () {}, trigger: function () {}};
-			fakeWorld = riot.observable(fakeWorld);
+			controller = new WorldController(DT_MAX);
+			fakeWorld = new riot.observable();
+			fakeWorld.update = function (dt) {};
+			fakeWorld.init = function () {};
+			fakeWorld.updateDisplayPositions = function () {};
+			fakeWorld.trigger = function () {};
 			fakeCodeObj = {init: function () {}, update: function () {}};
 			frameRequester = createFrameRequester(10.0);
 			spyOn(fakeWorld, 'update').and.callThrough();
@@ -357,7 +368,7 @@ describe('Elevator Saga', () => {
 			expect(e.getExactCurrentFloor()).toBeLessThan(1.15, 'current floor');
 		});
 
-		it('doesnt seem to overshoot when stopping at floors', () => {
+		it('doesnt seem to overshoot when stopping at floors', () => {
 			_.each(_.range(60, 120, 2.32133), (updatesPerSecond) => {
 				const STEPSIZE = 1.0 / updatesPerSecond;
 				e.setFloorPosition(1);
@@ -381,7 +392,7 @@ describe('Elevator Saga', () => {
 			beforeEach(() => {
 				e = new Elevator(1.5, 4, 40);
 				e.setFloorPosition(0);
-				elevInterface = asElevatorInterface({}, e, 4);
+				elevInterface = new ElevatorInterface(e, 4);
 			});
 
 			describe('events', () => {
@@ -509,7 +520,7 @@ describe('Elevator Saga', () => {
 
 	describe('base', () => {
 		describe('getCodeObjFromCode', () => {
-			const testCode = '{init: function init() {}, update: function update() {}}';
+			const testCode = 'export function init() {} export function update() {}';
 			it('handles trailing whitespace', () => {
 				expect(getCodeObjFromCode(`${testCode}\n`)).toEqual(jasmine.any(Object));
 			});

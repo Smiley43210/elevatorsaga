@@ -1,15 +1,23 @@
-const createWorldCreator = function () {
-	const creator = {};
+import Elevator from './elevator.js';
+import ElevatorInterface from './interfaces.js';
+import Floor from './floor.js';
+import User from './user.js';
 
-	creator.createFloors = function (floorCount, floorHeight, errorHandler) {
+export class WorldCreator {
+	constructor() {
+		
+	}
+	
+	createFloors(floorCount, floorHeight, errorHandler) {
 		const floors = _.map(_.range(floorCount), (e, i) => {
 			const yPos = (floorCount - 1 - i) * floorHeight;
-			const floor = asFloor({}, i, yPos, errorHandler);
+			const floor = new Floor(i, yPos, errorHandler);
 			return floor;
 		});
 		return floors;
-	};
-	creator.createElevators = function (elevatorCount, floorCount, floorHeight, elevatorCapacities) {
+	}
+	
+	createElevators(elevatorCount, floorCount, floorHeight, elevatorCapacities) {
 		elevatorCapacities = elevatorCapacities || [4];
 		let currentX = 200.0;
 		const elevators = _.map(_.range(elevatorCount), (e, i) => {
@@ -23,9 +31,9 @@ const createWorldCreator = function () {
 			return elevator;
 		});
 		return elevators;
-	};
+	}
 
-	creator.createRandomUser = function () {
+	createRandomUser() {
 		const weight = _.random(55, 100);
 		const user = new User(weight);
 		if (_.random(40) === 0) {
@@ -36,10 +44,10 @@ const createWorldCreator = function () {
 			user.displayType = 'male';
 		}
 		return user;
-	};
+	}
 
-	creator.spawnUserRandomly = function (floorCount, floorHeight, floors) {
-		const user = creator.createRandomUser();
+	spawnUserRandomly(floorCount, floorHeight, floors) {
+		const user = this.createRandomUser();
 		user.moveTo(105 + _.random(40), 0);
 		const currentFloor = _.random(1) === 0 ? 0 : _.random(floorCount - 1);
 		let destinationFloor;
@@ -56,23 +64,24 @@ const createWorldCreator = function () {
 		}
 		user.appearOnFloor(floors[currentFloor], destinationFloor);
 		return user;
-	};
+	}
 
-	creator.createWorld = function (options) {
+	createWorld(options) {
 		console.log('Creating world with options', options);
 		const defaultOptions = {floorHeight: 50, floorCount: 4, elevatorCount: 2, spawnRate: 0.5};
 		options = _.defaults(_.clone(options), defaultOptions);
-		const world = {floorHeight: options.floorHeight, transportedCounter: 0};
-		riot.observable(world);
+		const world = new riot.observable();
+		world.floorHeight = options.floorHeight;
+		world.transportedCounter = 0;
 
 		const handleUserCodeError = function (e) {
 			world.trigger('usercode_error', e);
 		};
 
-		world.floors = creator.createFloors(options.floorCount, world.floorHeight, handleUserCodeError);
-		world.elevators = creator.createElevators(options.elevatorCount, options.floorCount, world.floorHeight, options.elevatorCapacities);
+		world.floors = this.createFloors(options.floorCount, world.floorHeight, handleUserCodeError);
+		world.elevators = this.createElevators(options.elevatorCount, options.floorCount, world.floorHeight, options.elevatorCapacities);
 		world.elevatorInterfaces = _.map(world.elevators, (e) => {
-			return asElevatorInterface({}, e, options.floorCount, handleUserCodeError);
+			return new ElevatorInterface(e, options.floorCount, handleUserCodeError);
 		});
 		world.users = [];
 		world.transportedCounter = 0;
@@ -110,13 +119,13 @@ const createWorldCreator = function () {
 			// Use regular loops for memory/performance reasons
 			// Notify floors first because overflowing users
 			// will press buttons again.
-			for (var i = 0, len = world.floors.length; i < len; ++i) {
+			for (let i = 0, len = world.floors.length; i < len; ++i) {
 				const floor = world.floors[i];
 				if (elevator.currentFloor === i) {
 					floor.elevatorAvailable(elevator);
 				}
 			}
-			for (var users = world.users, i = 0, len = users.length; i < len; ++i) {
+			for (let users = world.users, i = 0, len = users.length; i < len; ++i) {
 				const user = users[i];
 				if (user.currentFloor === elevator.currentFloor) {
 					user.elevatorAvailable(elevator, world.floors[elevator.currentFloor]);
@@ -125,7 +134,7 @@ const createWorldCreator = function () {
 		};
 
 		// Bind them all together
-		for (var i = 0; i < world.elevators.length; ++i) {
+		for (let i = 0; i < world.elevators.length; ++i) {
 			world.elevators[i].on('entrance_available', handleElevAvailability);
 		}
 
@@ -150,7 +159,7 @@ const createWorldCreator = function () {
 
 		// This will cause elevators to "re-arrive" at floors if someone presses an
 		// appropriate button on the floor before the elevator has left.
-		for (var i = 0; i < world.floors.length; ++i) {
+		for (let i = 0; i < world.floors.length; ++i) {
 			world.floors[i].on('up_button_pressed down_button_pressed', handleButtonRepressing);
 		}
 
@@ -158,29 +167,29 @@ const createWorldCreator = function () {
 		let elapsedSinceStatsUpdate = 0.0;
 
 		// Main update function
-		world.update = function (dt) {
+		world.update = (dt) => {
 			world.elapsedTime += dt;
 			elapsedSinceSpawn += dt;
 			elapsedSinceStatsUpdate += dt;
 			while (elapsedSinceSpawn > 1.0 / options.spawnRate) {
 				elapsedSinceSpawn -= 1.0 / options.spawnRate;
-				registerUser(creator.spawnUserRandomly(options.floorCount, world.floorHeight, world.floors));
+				registerUser(this.spawnUserRandomly(options.floorCount, world.floorHeight, world.floors));
 			}
 
 			// Use regular for loops for performance and memory friendlyness
-			for (var i = 0, len = world.elevators.length; i < len; ++i) {
+			for (let i = 0, len = world.elevators.length; i < len; ++i) {
 				const e = world.elevators[i];
 				e.update(dt);
 				e.updateElevatorMovement(dt);
 			}
-			for (var users = world.users, i = 0, len = users.length; i < len; ++i) {
-				var u = users[i];
+			for (let users = world.users, i = 0, len = users.length; i < len; ++i) {
+				const u = users[i];
 				u.update(dt);
 				world.maxWaitTime = Math.max(world.maxWaitTime, world.elapsedTime - u.spawnTimestamp);
 			}
 
-			for (var users = world.users, i = world.users.length - 1; i >= 0; i--) {
-				var u = users[i];
+			for (let users = world.users, i = world.users.length - 1; i >= 0; i--) {
+				const u = users[i];
 				if (u.removeMe) {
 					users.splice(i, 1);
 				}
@@ -190,10 +199,10 @@ const createWorldCreator = function () {
 		};
 
 		world.updateDisplayPositions = function () {
-			for (var i = 0, len = world.elevators.length; i < len; ++i) {
+			for (let i = 0, len = world.elevators.length; i < len; ++i) {
 				world.elevators[i].updateDisplayPosition();
 			}
-			for (var users = world.users, i = 0, len = users.length; i < len; ++i) {
+			for (let users = world.users, i = 0, len = users.length; i < len; ++i) {
 				users[i].updateDisplayPosition();
 			}
 		};
@@ -215,22 +224,25 @@ const createWorldCreator = function () {
 		};
 
 		return world;
-	};
+	}
+}
 
-	return creator;
-};
-
-const createWorldController = function (dtMax) {
-	const controller = riot.observable({});
-	controller.timeScale = 1.0;
-	controller.isPaused = true;
-	controller.start = function (world, codeObj, animationFrameRequester, autoStart) {
-		controller.isPaused = true;
+export class WorldController extends riot.observable {
+	constructor(dtMax) {
+		super();
+		
+		this.dtMax = dtMax;
+		this.timeScale = 1.0;
+		this.isPaused = true;
+	}
+	
+	start(world, codeObj, animationFrameRequester, autoStart) {
+		this.isPaused = true;
 		let lastT = null;
 		let firstUpdate = true;
-		world.on('usercode_error', controller.handleUserCodeError);
-		var updater = function (t) {
-			if (!controller.isPaused && !world.challengeEnded && lastT !== null) {
+		world.on('usercode_error', this.handleUserCodeError);
+		const updater = (t) => {
+			if (!this.isPaused && !world.challengeEnded && lastT !== null) {
 				if (firstUpdate) {
 					firstUpdate = false;
 					// This logic prevents infite loops in usercode from breaking the page permanently - don't evaluate user code until game is unpaused.
@@ -238,22 +250,22 @@ const createWorldController = function (dtMax) {
 						codeObj.init(world.elevatorInterfaces, world.floors);
 						world.init();
 					} catch (e) {
-						controller.handleUserCodeError(e);
+						this.handleUserCodeError(e);
 					}
 				}
 
 				const dt = t - lastT;
-				let scaledDt = dt * 0.001 * controller.timeScale;
-				scaledDt = Math.min(scaledDt, dtMax * 3 * controller.timeScale); // Limit to prevent unhealthy substepping
+				let scaledDt = dt * 0.001 * this.timeScale;
+				scaledDt = Math.min(scaledDt, this.dtMax * 3 * this.timeScale); // Limit to prevent unhealthy substepping
 				try {
 					codeObj.update(scaledDt, world.elevatorInterfaces, world.floors);
 				} catch (e) {
-					controller.handleUserCodeError(e);
+					this.handleUserCodeError(e);
 				}
 				while (scaledDt > 0.0 && !world.challengeEnded) {
-					const thisDt = Math.min(dtMax, scaledDt);
+					const thisDt = Math.min(this.dtMax, scaledDt);
 					world.update(thisDt);
-					scaledDt -= dtMax;
+					scaledDt -= this.dtMax;
 				}
 				world.updateDisplayPositions();
 				world.trigger('stats_display_changed'); // TODO: Trigger less often for performance reasons etc
@@ -264,25 +276,23 @@ const createWorldController = function (dtMax) {
 			}
 		};
 		if (autoStart) {
-			controller.setPaused(false);
+			this.setPaused(false);
 		}
 		animationFrameRequester(updater);
-	};
+	}
 
-	controller.handleUserCodeError = function (e) {
-		controller.setPaused(true);
+	handleUserCodeError(e) {
+		this.setPaused(true);
 		console.log('Usercode error on update', e);
-		controller.trigger('usercode_error', e);
-	};
+		this.trigger('usercode_error', e);
+	}
 
-	controller.setPaused = function (paused) {
-		controller.isPaused = paused;
-		controller.trigger('timescale_changed');
-	};
-	controller.setTimeScale = function (timeScale) {
-		controller.timeScale = timeScale;
-		controller.trigger('timescale_changed');
-	};
-
-	return controller;
-};
+	setPaused(paused) {
+		this.isPaused = paused;
+		this.trigger('timescale_changed');
+	}
+	setTimeScale(timeScale) {
+		this.timeScale = timeScale;
+		this.trigger('timescale_changed');
+	}
+}

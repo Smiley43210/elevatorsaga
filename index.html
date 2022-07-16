@@ -9,27 +9,18 @@
     <link rel="stylesheet" href="libs/codemirror/themes/solarized.css">
     <link rel="stylesheet" href="style.css" type="text/css" media="all">
 
-    <script type="text/javascript" src="libs/jquery-2.1.1.min.js"></script>
-    <script type="text/javascript" src="libs/lodash.min.js"></script>
-    <script type="text/javascript" src="libs/riot.js"></script>
+    <script src="libs/jquery-2.1.1.min.js"></script>
+    <script src="libs/lodash.min.js"></script>
+    <script src="libs/riot.js"></script>
 
-    <script type="text/javascript" src="libs/codemirror/codemirror.js"></script>
-    <script type="text/javascript" src="libs/codemirror/addon/edit/closebrackets.js"></script>
-    <script type="text/javascript" src="libs/codemirror/mode/javascript/javascript.js"></script>
+    <script src="libs/codemirror/codemirror.js"></script>
+    <script src="libs/codemirror/addon/edit/closebrackets.js"></script>
+    <script src="libs/codemirror/mode/javascript/javascript.js"></script>
 
-    <script type="text/javascript" src="libs/unobservable.js"></script>
+    <script src="libs/unobservable.js"></script>
 
-    <script type="text/javascript" src="script/base.js"></script>
-    <script type="text/javascript" src="script/movable.js"></script>
-    <script type="text/javascript" src="script/floor.js"></script>
-    <script type="text/javascript" src="script/user.js"></script>
-    <script type="text/javascript" src="script/elevator.js"></script>
-    <script type="text/javascript" src="script/interfaces.js"></script>
-    <script type="text/javascript" src="script/world.js"></script>
-    <script type="text/javascript" src="script/presenters.js"></script>
-    <script type="text/javascript" src="script/challenges.js"></script>
-    <script type="text/javascript" src="script/fitness.js"></script>
-    <script type="text/javascript" src="script/app.js"></script>
+    <script src="script/fitness.js"></script>
+    <script type="module" src="script/app.js"></script>
 
 
     <script type="text/template" id="user-template">
@@ -84,52 +75,50 @@
     </script>
 
     <script type="text/plain" id="default-elev-implementation">
-{
-    init: function(elevators, floors) {
-        var elevator = elevators[0]; // Let's use the first elevator
+export function init(elevators, floors) {
+    const elevator = elevators[0]; // Let's use the first elevator
 
-        // Whenever the elevator is idle (has no more queued destinations) ...
-        elevator.on("idle", function() {
-            // let's go to all the floors (or did we forget one?)
-            elevator.goToFloor(0);
-            elevator.goToFloor(1);
-        });
-    },
-    update: function(dt, elevators, floors) {
-        // We normally don't need to do anything here
-    }
+    // Whenever the elevator is idle (has no more queued destinations) ...
+    elevator.on("idle", () => {
+        // let's go to all the floors (or did we forget one?)
+        elevator.goToFloor(0);
+        elevator.goToFloor(1);
+    });
+}
+
+export function update(dt, elevators, floors) {
+    // We normally don't need to do anything here
 }
     </script>
     <script type="text/plain" id="devtest-elev-implementation">
-{
-    init: function(elevators, floors) {
-        var selectElevatorForFloorPickup = function(floorNum) {
-            return _.max(elevators, function(e) {
-                return (_.contains(e.destinationQueue, floorNum) ? 4 : 0) +
-                    (-e.destinationQueue.length*e.destinationQueue.length) +
-                    (-e.loadFactor()*e.loadFactor() * 3);
-            });
-        };
+export function init(elevators, floors) {
+function selectElevatorForFloorPickup(floorNum) {
+    return _.max(elevators, (e) => {
+        return (_.contains(e.destinationQueue, floorNum) ? 4 : 0) +
+            (-e.destinationQueue.length * e.destinationQueue.length) +
+            (-e.loadFactor() * e.loadFactor() * 3);
+    });
+}
 
-        _.each(floors, function(floor) {
-            floor.on("down_button_pressed up_button_pressed", function() {
-                var elevator = selectElevatorForFloorPickup(floor.level);
-                if(!_.contains(elevator.destinationQueue, floor.level)) {
-                    elevator.goToFloor(floor.level);
-                }
-            });
-        });
-        _.each(elevators, function(elevator) {
-            elevator.on("floor_button_pressed", function(floorNum) {
-                elevator.goToFloor(floorNum);
-            });
-            elevator.on("idle", function() {
-                elevator.goToFloor(0);
-            });
-        });
-    },
-    update: function(dt, elevators, floors) {
-    }
+_.each(floors, (floor) => {
+    floor.on("down_button_pressed up_button_pressed", () => {
+        const elevator = selectElevatorForFloorPickup(floor.level);
+        if (!_.contains(elevator.destinationQueue, floor.level)) {
+            elevator.goToFloor(floor.level);
+        }
+    });
+});
+_.each(elevators, (elevator) => {
+    elevator.on("floor_button_pressed", (floorNum) => {
+        elevator.goToFloor(floorNum);
+    });
+    elevator.on("idle", () => {
+        elevator.goToFloor(0);
+    });
+});
+}
+
+export function update(dt, elevators, floors) {
 }
     </script>
 
@@ -181,9 +170,9 @@
             <h3>Confused? Open the <a href="documentation.html">Help and API documentation</a> page</h3>
         </div>
         <div class="footer">
-            <h4>Made by Magnus Wolffelt and contributors</h4>
+            <h4>Original by Magnus Wolffelt and contributors. This version forked by Smiley43210.</h4>
             <h4>Version <span class="emphasis-color">1.6.5</span></h4>
-            <h4><a href="https://github.com/magwo/elevatorsaga">Source code</a> on GitHub</h4>
+            <h4><a href="https://github.com/Smiley43210/elevatorsaga">Source code</a> on GitHub</h4>
             <h4><a href="test/index.html">Run tests</a></h4>
         </div>
     </div>

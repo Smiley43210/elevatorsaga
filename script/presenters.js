@@ -1,4 +1,4 @@
-function clearAll($elems) {
+export function clearAll($elems) {
 	_.each($elems, ($elem) => {
 		$elem.empty();
 	});
@@ -18,7 +18,7 @@ function updateUserState($user, elem_user, user) {
 	}
 }
 
-function presentStats($parent, world) {
+export function presentStats($parent, world) {
 
 	const elem_transportedcounter = $parent.find('.transportedcounter').get(0),
 		elem_elapsedtime = $parent.find('.elapsedtime').get(0),
@@ -38,7 +38,7 @@ function presentStats($parent, world) {
 	world.trigger('stats_display_changed');
 }
 
-function presentChallenge($parent, challenge, app, world, worldController, challengeNum, challengeTempl) {
+export function presentChallenge($parent, challenge, app, world, worldController, challengeNum, challengeTempl) {
 	const $challenge = $(riot.render(challengeTempl, {
 		challenge: challenge,
 		num: challengeNum,
@@ -64,14 +64,14 @@ function presentChallenge($parent, challenge, app, world, worldController, chall
 	});
 }
 
-function presentFeedback($parent, feedbackTempl, world, title, message, url) {
+export function presentFeedback($parent, feedbackTempl, world, title, message, url) {
 	$parent.html(riot.render(feedbackTempl, {title: title, message: message, url: url, paddingTop: world.floors.length * world.floorHeight * 0.2}));
 	if (!url) {
 		$parent.find('a').remove();
 	}
 }
 
-function presentWorld($world, world, floorTempl, elevatorTempl, elevatorButtonTempl, userTempl) {
+export function presentWorld($world, world, floorTempl, elevatorTempl, elevatorButtonTempl, userTempl) {
 	$world.css('height', world.floorHeight * world.floors.length);
 
 	$world.append(_.map(world.floors, (f) => {
@@ -149,7 +149,7 @@ function presentWorld($world, world, floorTempl, elevatorTempl, elevatorButtonTe
 	});
 }
 
-function presentCodeStatus($parent, templ, error) {
+export function presentCodeStatus($parent, templ, error) {
 	console.log(error);
 	const errorDisplay = error ? 'block' : 'none';
 	const successDisplay = error ? 'none' : 'block';
@@ -162,7 +162,7 @@ function presentCodeStatus($parent, templ, error) {
 	$parent.html(status);
 }
 
-function makeDemoFullscreen() {
+export function makeDemoFullscreen() {
 	$('body .container > *').not('.world').css('visibility', 'hidden');
 	$('html, body, body .container, .world').css({width: '100%', margin: '0', 'padding': 0});
 }

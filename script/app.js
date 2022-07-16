@@ -1,4 +1,9 @@
-const createEditor = function () {
+import {getCodeObjFromCode} from '../script/base.js';
+import {challenges} from './challenges.js';
+import {WorldController, WorldCreator} from './world.js';
+import {clearAll, makeDemoFullscreen, presentChallenge, presentCodeStatus, presentFeedback, presentStats, presentWorld} from './presenters.js';
+
+const createEditor = () => {
 	const lsKey = 'elevatorCrushCode_v5';
 
 	const cm = CodeMirror.fromTextArea(document.getElementById('code'), {
@@ -26,7 +31,7 @@ const createEditor = function () {
 		const lineFrom = change.from.line;
 		const lineTo = change.from.line + change.text.length;
 
-		function reindentLines(codeMirror, lineFrom, lineTo) {
+		function reindentLines() {
 			codeMirror.operation(() => {
 				codeMirror.eachLine(lineFrom, lineTo, (lineHandle) => {
 					codeMirror.indentLine(lineHandle.lineNo(), 'smart');
@@ -34,7 +39,7 @@ const createEditor = function () {
 			});
 		}
 
-		reindentLines(codeMirror, lineFrom, lineTo);
+		reindentLines();
 	});
 
 	const reset = function () {
@@ -73,18 +78,18 @@ const createEditor = function () {
 		cm.focus();
 	});
 
-	var returnObj = riot.observable({});
+	const returnObj = new riot.observable();
 	const autoSaver = _.debounce(saveCode, 1000);
 	cm.on('change', () => {
 		autoSaver();
 	});
 
-	returnObj.getCodeObj = function () {
+	returnObj.getCodeObj = async function () {
 		console.log('Getting code...');
 		const code = cm.getValue();
 		let obj;
 		try {
-			obj = getCodeObjFromCode(code);
+			obj = await getCodeObjFromCode(code);
 			returnObj.trigger('code_success');
 		} catch (e) {
 			returnObj.trigger('usercode_error', e);
@@ -114,7 +119,7 @@ const createParamsUrl = function (current, overrides) {
 	}).join(',')}`;
 };
 
-$(() => {
+document.addEventListener('DOMContentLoaded', () => {
 	const tsKey = 'elevatorTimeScale';
 	const editor = createEditor();
 
@@ -134,15 +139,15 @@ $(() => {
 	const feedbackTempl = document.getElementById('feedback-template').innerHTML.trim();
 	const codeStatusTempl = document.getElementById('codestatus-template').innerHTML.trim();
 
-	const app = riot.observable({});
-	app.worldController = createWorldController(1.0 / 60.0);
+	const app = new riot.observable();
+	app.worldController = new WorldController(1.0 / 60.0);
 	app.worldController.on('usercode_error', (e) => {
 		console.log('World raised code error', e);
 		editor.trigger('usercode_error', e);
 	});
 
 	console.log(app.worldController);
-	app.worldCreator = createWorldCreator();
+	app.worldCreator = new WorldCreator();
 	app.world = undefined;
 
 	app.currentChallengeIndex = 0;
@@ -155,7 +160,7 @@ $(() => {
 		}
 	};
 
-	app.startChallenge = function (challengeIndex, autoStart) {
+	app.startChallenge = async function (challengeIndex, autoStart) {
 		if (typeof app.world !== 'undefined') {
 			app.world.unWind();
 			// TODO: Investigate if memory leaks happen here
@@ -187,7 +192,7 @@ $(() => {
 			}
 		});
 
-		const codeObj = editor.getCodeObj();
+		const codeObj = await editor.getCodeObj();
 		console.log('Starting...');
 		app.worldController.start(app.world, codeObj, window.requestAnimationFrame, autoStart);
 	};
@@ -247,4 +252,8 @@ $(() => {
 		app.worldController.setTimeScale(timeScale);
 		app.startChallenge(requestedChallenge, autoStart);
 	});
+	
+	// Trigger route function above
+	// Not needed when used in a synchronous context (without ES6+ import/export)
+	riot.route('/');
 });

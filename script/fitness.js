@@ -43,15 +43,16 @@ function makeAverageResult(results) {
 	const averagedResult = {};
 	_.forOwn(results[0].result, (value, resultProperty) => {
 		const sum = _.sum(_.pluck(_.pluck(results, 'result'), resultProperty));
-		averagedResult[resultProperty] = sum / results.length;
+		averagedResult[resultProperty] = sum / results.length;
 
 	});
 	return {options: results[0].options, result: averagedResult};
 }
 
 function doFitnessSuite(codeStr, runCount) {
+	let codeObj;
 	try {
-		var codeObj = getCodeObjFromCode(codeStr);
+		codeObj = getCodeObjFromCode(codeStr);
 	} catch (e) {
 		return {error: `${e}`};
 	}
@@ -88,7 +89,7 @@ function fitnessSuite(codeStr, preferWorker, callback) {
 	if (!!Worker && preferWorker) {
 		// Web workers are available, neat.
 		try {
-			const w = new Worker('fitnessworker.js');
+			const w = new Worker('script/fitnessworker.js');
 			w.postMessage(codeStr);
 			w.onmessage = function (msg) {
 				console.log('Got message from fitness worker', msg);

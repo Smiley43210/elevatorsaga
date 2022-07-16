@@ -1,55 +1,55 @@
-const asFloor = function (obj, floorLevel, yPosition, errorHandler) {
-	const floor = riot.observable(obj);
-
-	floor.level = floorLevel;
-	floor.yPosition = yPosition;
-	floor.buttonStates = {up: '', down: ''};
-
-	// TODO: Ideally the floor should have a facade where tryTrigger is done
-	const tryTrigger = function (event, arg1, arg2, arg3, arg4) {
+export default class Floor extends riot.observable {
+	constructor(floorLevel, yPosition, errorHandler) {
+		super();
+        
+		this.level = floorLevel;
+		this.yPosition = yPosition;
+		this.errorHandler = errorHandler;
+		this.buttonStates = {up: '', down: ''};
+	}
+	
+	tryTrigger(event, ...args) {
 		try {
-			floor.trigger(event, arg1, arg2, arg3, arg4);
+			this.trigger(event, ...args);
 		} catch (e) {
-			errorHandler(e);
+			this.errorHandler(e);
 		}
-	};
-
-	floor.pressUpButton = function () {
-		const prev = floor.buttonStates.up;
-		floor.buttonStates.up = 'activated';
-		if (prev !== floor.buttonStates.up) {
-			tryTrigger('buttonstate_change', floor.buttonStates);
-			tryTrigger('up_button_pressed', floor);
+	}
+	
+	pressUpButton() {
+		const prev = this.buttonStates.up;
+		this.buttonStates.up = 'activated';
+		if (prev !== this.buttonStates.up) {
+			this.tryTrigger('buttonstate_change', this.buttonStates);
+			this.tryTrigger('up_button_pressed', this);
 		}
-	};
+	}
 
-	floor.pressDownButton = function () {
-		const prev = floor.buttonStates.down;
-		floor.buttonStates.down = 'activated';
-		if (prev !== floor.buttonStates.down) {
-			tryTrigger('buttonstate_change', floor.buttonStates);
-			tryTrigger('down_button_pressed', floor);
+	pressDownButton() {
+		const prev = this.buttonStates.down;
+		this.buttonStates.down = 'activated';
+		if (prev !== this.buttonStates.down) {
+			this.tryTrigger('buttonstate_change', this.buttonStates);
+			this.tryTrigger('down_button_pressed', this);
 		}
-	};
+	}
 
-	floor.elevatorAvailable = function (elevator) {
-		if (elevator.goingUpIndicator && floor.buttonStates.up) {
-			floor.buttonStates.up = '';
-			tryTrigger('buttonstate_change', floor.buttonStates);
+	elevatorAvailable(elevator) {
+		if (elevator.goingUpIndicator && this.buttonStates.up) {
+			this.buttonStates.up = '';
+			this.tryTrigger('buttonstate_change', this.buttonStates);
 		}
-		if (elevator.goingDownIndicator && floor.buttonStates.down) {
-			floor.buttonStates.down = '';
-			tryTrigger('buttonstate_change', floor.buttonStates);
+		if (elevator.goingDownIndicator && this.buttonStates.down) {
+			this.buttonStates.down = '';
+			this.tryTrigger('buttonstate_change', this.buttonStates);
 		}
-	};
+	}
 
-	floor.getSpawnPosY = function () {
-		return floor.yPosition + 30;
-	};
+	getSpawnPosY() {
+		return this.yPosition + 30;
+	}
 
-	floor.floorNum = function () {
-		return floor.level;
-	};
-
-	return floor;
-};
+	floorNum() {
+		return this.level;
+	}
+}
