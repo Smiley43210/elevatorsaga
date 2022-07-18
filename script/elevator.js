@@ -40,10 +40,18 @@ export default class Elevator extends Movable {
 
 		this.on('change:goingUpIndicator', (value) => {
 			this.trigger('indicatorstate_change', {up: this.goingUpIndicator, down: this.goingDownIndicator});
+			
+			if (this.worldY == this.getYPosOfFloor(this.getExactFloorOfYPos(this.worldY))) {
+				this.goToFloor(this.getExactFloorOfYPos(this.worldY), true);
+			}
 		});
 
 		this.on('change:goingDownIndicator', (value) => {
 			this.trigger('indicatorstate_change', {up: this.goingUpIndicator, down: this.goingDownIndicator});
+			
+			if (this.worldY == this.getYPosOfFloor(this.getExactFloorOfYPos(this.worldY))) {
+				this.goToFloor(this.getExactFloorOfYPos(this.worldY), true);
+			}
 		});
 	}
 	
